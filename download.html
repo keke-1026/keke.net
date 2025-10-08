@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>ダウンロードページ</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Noto Sans JP', sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #74ebd5 0%, #ACB6E5 100%);
+      margin: 0;
+    }
+    .container {
+      background: #fff;
+      padding: 40px;
+      border-radius: 20px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+      text-align: center;
+      width: 90%;
+      max-width: 400px;
+    }
+    h1 {
+      margin-bottom: 20px;
+      font-weight: 600;
+      color: #333;
+    }
+    p {
+      color: #555;
+      margin-bottom: 20px;
+    }
+    input {
+      padding: 10px;
+      width: 80%;
+      border: 2px solid #ddd;
+      border-radius: 10px;
+      font-size: 1em;
+      outline: none;
+      transition: 0.2s;
+    }
+    input:focus {
+      border-color: #74b9ff;
+    }
+    button {
+      margin-top: 15px;
+      padding: 10px 20px;
+      background: #74b9ff;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 1em;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    button:hover {
+      background: #0984e3;
+    }
+    #error {
+      margin-top: 15px;
+      color: #d63031;
+      font-weight: bold;
+    }
+    #link {
+      display: none;
+      margin-top: 25px;
+    }
+    #downloadLink {
+      display: inline-block;
+      padding: 12px 24px;
+      background: #00b894;
+      color: white;
+      font-size: 1em;
+      border-radius: 12px;
+      text-decoration: none;
+      transition: 0.3s;
+    }
+    #downloadLink:hover {
+      background: #019875;
+    }
+    footer {
+      margin-top: 30px;
+      font-size: 0.85em;
+      color: #888;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>ダウンロードページ</h1>
+    <p>パスワードを入力してください。パスワードは身内に教えます</p>
+
+    <!-- ★ 修正ポイント: type="text" & inputmode="text" に変更 -->
+    <input type="text" id="password" placeholder="パスワードを入力" inputmode="text">
+    <br>
+    <button onclick="checkPassword()">送信</button>
+    <div id="error"></div>
+
+    <div id="link">
+      <h2>ダウンロードリンク</h2>
+      <a id="downloadLink" href="https://keke-1026.github.io/keke.net/" target="_blank">
+        ファイルをダウンロード(今はダウンロードできない)
+      </a>
+    </div>
+
+    <footer>©2025 keke.net 作者</footer>
+  </div>
+
+  <script>
+    const PASSWORD = "1008"; // ← 漢字やひらがなOK
+
+    function checkPassword() {
+      const input = document.getElementById("password").value;
+      const error = document.getElementById("error");
+      if (input === PASSWORD) {
+        document.getElementById("link").style.display = "block";
+        error.textContent = "";
+      } else {
+        error.textContent = "パスワードが違います。もう一度入力してください。";
+      }
+    }
+  </script>
+</body>
+</html>
