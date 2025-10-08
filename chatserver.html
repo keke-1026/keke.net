@@ -1,0 +1,558 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Firebase シンプルチャット（管理者機能・色付きメッセージ）</title>
+  <style>
+    :root{--bg:#0f1724;--card:#0b1220;--accent:#1e90ff;--muted:#9aa4b2}
+    html,body{height:100%;margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,'Hiragino Kaku Gothic ProN',Meiryo,sans-serif;background:linear-gradient(180deg,#061021 0%,#081227 100%);color:#e6eef6}
+    .app{max-width:1100px;margin:24px auto;border-radius:12px;overflow:hidden;box-shadow:0 6px 30px rgba(2,6,23,.6)}
+    header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:rgba(255,255,255,0.02)}
+    header h1{font-size:18px;margin:0}
+    main{display:flex;gap:12px;padding:16px;background:linear-gradient(180deg,rgba(255,255,255,0.01),transparent)}
+    .sidebar{width:300px;background:rgba(255,255,255,0.02);padding:12px;border-radius:8px}
+    .chat{flex:1;display:flex;flex-direction:column;min-height:520px}
+    .messages{flex:1;overflow:auto;padding:12px;background:linear-gradient(180deg,rgba(255,255,255,0.01),transparent);border-radius:8px}
+    .msg{margin-bottom:12px;padding:8px 10px;border-radius:10px;max-width:78%;position:relative}
+    .mine{background:linear-gradient(90deg,#18304a,#0f2436);margin-left:auto}
+    .other{background:rgba(255,255,255,0.02)}
+    .msg.system{background:transparent;color:var(--muted);text-align:center;max-width:100%;border-radius:6px;padding:6px 10px}
+    .meta{font-size:12px;color:var(--muted);margin-bottom:6px}
+    .msg .actions{position:absolute;top:6px;right:6px;display:flex;gap:6px}
+    .msg .actions button{background:transparent;border:1px solid rgba(255,255,255,0.04);color:var(--muted);padding:4px 6px;border-radius:6px;font-size:12px}
+    .msg .colorDot{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:8px;vertical-align:middle}
+    form.send{display:flex;gap:8px;margin-top:10px;align-items:center}
+    input[type=text]{flex:1;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit}
+    select{padding:8px;border-radius:8px;background:transparent;border:1px solid rgba(255,255,255,0.04);color:inherit}
+    button{background:var(--accent);border:none;padding:10px 14px;border-radius:8px;color:#041225;font-weight:600}
+    .loginOverlay{position:fixed;inset:0;background:linear-gradient(0deg,rgba(2,6,23,0.6),rgba(2,6,23,0.6));display:flex;align-items:center;justify-content:center}
+    .loginCard{width:520px;background:var(--card);padding:18px;border-radius:12px;box-shadow:0 8px 30px rgba(2,6,23,.6)}
+    label{display:block;font-size:13px;margin-bottom:8px}
+    .small{font-size:13px;color:var(--muted)}
+    .usersList{max-height:220px;overflow:auto;margin-top:8px}
+    .error{color:#ffb4b4;background:rgba(255,0,0,0.03);padding:8px;border-radius:8px;margin-top:8px}
+    .hint{font-size:13px;color:#cfe9ff;margin-top:8px}
+    .nameEdit{display:flex;gap:8px;margin-top:8px}
+    .nameEdit input{flex:1;padding:6px;border-radius:6px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit}
+
+    /* admin modal */
+    .modal{position:fixed;left:0;top:0;right:0;bottom:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.4);z-index:2000}
+    .modal .card{background:var(--card);padding:16px;border-radius:10px;width:420px}
+
+    /* system notification (toast) */
+    #systemNotif{position:fixed;top:16px;right:16px;z-index:1000;min-width:220px;max-width:360px;padding:12px 16px;border-radius:10px;background:rgba(20,28,38,0.95);color:#dff3ff;box-shadow:0 6px 20px rgba(2,6,23,0.6);display:none}
+
+    /* Mobile-specific layout adjustments */
+    .mobile .sidebar{display:none}
+    .mobile .app{max-width:100%;border-radius:0;margin:0}
+    .mobile header{padding:10px}
+    .mobile .chat{min-height:calc(100vh - 120px)}
+    .mobile form.send{position:fixed;left:0;right:0;bottom:0;padding:10px;background:linear-gradient(180deg,#061021,transparent);}
+    .mobile .messages{padding-bottom:90px}
+
+    @media(max-width:760px){.sidebar{display:none}.app{margin:8px}.loginCard{width:90%}}
+  </style>
+</head>
+<body>
+  <div id="systemNotif" role="status" aria-live="polite"></div>
+  <div class="app">
+    <header>
+      <h1>シンプルチャット（管理機能付き）</h1>
+      <div style="display:flex;gap:8px;align-items:center">
+        <div class="small" id="status">未接続</div>
+        <button id="adminBtn" style="background:transparent;border:1px solid rgba(255,255,255,0.06);padding:6px 10px;border-radius:8px;color:var(--muted)">管理者ログイン</button>
+      </div>
+    </header>
+    <main>
+      <aside class="sidebar">
+        <div><strong>ユーザー</strong></div>
+        <div id="meBox" class="small" style="margin-top:6px">未ログイン</div>
+
+        <!-- 名前変更 UI -->
+        <div class="nameEdit" id="nameEdit" style="display:none">
+          <input id="changeNameInput" type="text" maxlength="20" placeholder="新しい表示名" />
+          <button id="saveNameBtn" type="button">保存</button>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button id="changeNameBtn" type="button" style="flex:1">名前を変更</button>
+          <button id="cancelChangeBtn" type="button" style="flex:1;display:none">キャンセル</button>
+        </div>
+
+        <hr style="opacity:.06;margin:12px 0">
+        <div><strong>参加中のユーザー</strong></div>
+        <div class="usersList" id="usersList"></div>
+      </aside>
+      <section class="chat">
+        <div class="messages" id="messages"></div>
+        <form class="send" id="sendForm">
+          <select id="colorSelect" title="メッセージ色">
+            <option value="#1e90ff">青</option>
+            <option value="#10b981">緑</option>
+            <option value="#f59e0b">黄</option>
+            <option value="#ef4444">赤</option>
+            <option value="#a78bfa">紫</option>
+            <option value="#94a3b8">灰</option>
+          </select>
+          <input type="text" id="msgText" placeholder="メッセージを入力..." autocomplete="off" />
+          <button type="submit">送信</button>
+        </form>
+      </section>
+    </main>
+  </div>
+
+  <!-- login overlay (name required) -->
+  <div class="loginOverlay" id="loginOverlay">
+    <div class="loginCard">
+      <h2>新規登録（匿名） — 表示名を入力してください</h2>
+      <p class="small">匿名認証＋表示名を Firestore に保存します。管理者は別途ログインします。</p>
+
+      <label>表示名（20文字以内）
+        <input type="text" id="displayName" maxlength="20" style="width:100%;padding:8px;border-radius:6px;margin-top:6px;background:transparent;border:1px solid rgba(255,255,255,0.04);color:inherit" />
+      </label>
+
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+        <button id="guestBtn">新規登録（匿名）</button>
+        <button id="localBtn" type="button">ローカルモードで続行</button>
+      </div>
+
+      <div id="loginError" class="error" style="display:none"></div>
+      <div class="hint" id="loginHint" style="display:none"></div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+        <button id="retryBtn" type="button" style="display:none">Firebase 再試行</button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- admin modal -->
+  <div class="modal" id="adminModal">
+    <div class="card">
+      <h3>管理者ログイン</h3>
+      <label>メール
+        <input type="email" id="adminEmail" style="width:100%;padding:8px;margin-top:6px;border-radius:6px;background:transparent;border:1px solid rgba(255,255,255,0.04);color:inherit" />
+      </label>
+      <label>パスワード
+        <input type="password" id="adminPassword" style="width:100%;padding:8px;margin-top:6px;border-radius:6px;background:transparent;border:1px solid rgba(255,255,255,0.04);color:inherit" />
+      </label>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+        <button id="adminLoginBtn">ログイン</button>
+        <button id="adminCloseBtn" type="button">閉じる</button>
+      </div>
+      <div id="adminError" class="error" style="display:none;margin-top:8px"></div>
+    </div>
+  </div>
+
+  <!-- admin hint: explanation about admin config -->
+  <div style="display:none" id="adminHint">管理者はFirebase Authenticationでメール/パスワードユーザーを作成し、Admin SDKでカスタムクレーム `admin:true` を付与してください。</div>
+
+  <!-- Firebase v9 modules via CDN -->
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js'
+    import { getAuth, signInAnonymously, onAuthStateChanged, signInWithEmailAndPassword, signOut, getIdTokenResult } from 'https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js'
+    import { getFirestore, collection, addDoc, serverTimestamp, query, orderBy, onSnapshot, setDoc, doc, getDoc, deleteDoc } from 'https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js'
+
+    // --- Firebase 設定（ユーザー提供） ---
+    const firebaseConfig = {
+      apiKey: "AIzaSyDqvGv0oG2JAaTFaPmfXFCdnQCYtTyICIQ",
+      authDomain: "webchat-k1026.firebaseapp.com",
+      projectId: "webchat-k1026",
+      storageBucket: "webchat-k1026.firebasestorage.app",
+      messagingSenderId: "458809326375",
+      appId: "1:458809326375:web:60c01d06f91433613f8702",
+      measurementId: "G-EXG34MFB76"
+    }
+
+    const app = initializeApp(firebaseConfig)
+    let auth = null
+    let db = null
+
+    try{
+      auth = getAuth(app)
+      db = getFirestore(app)
+    }catch(initErr){
+      console.warn('Firebase initialisation problem:', initErr)
+    }
+
+    // UI refs
+    const loginOverlay = document.getElementById('loginOverlay')
+    const guestBtn = document.getElementById('guestBtn')
+    const localBtn = document.getElementById('localBtn')
+    const retryBtn = document.getElementById('retryBtn')
+    const displayNameInput = document.getElementById('displayName')
+    const statusEl = document.getElementById('status')
+    const meBox = document.getElementById('meBox')
+    const usersList = document.getElementById('usersList')
+    const loginError = document.getElementById('loginError')
+    const loginHint = document.getElementById('loginHint')
+    const systemNotif = document.getElementById('systemNotif')
+
+    const messagesEl = document.getElementById('messages')
+    const sendForm = document.getElementById('sendForm')
+    const msgText = document.getElementById('msgText')
+    const colorSelect = document.getElementById('colorSelect')
+
+    // admin refs
+    const adminBtn = document.getElementById('adminBtn')
+    const adminModal = document.getElementById('adminModal')
+    const adminLoginBtn = document.getElementById('adminLoginBtn')
+    const adminCloseBtn = document.getElementById('adminCloseBtn')
+    const adminEmail = document.getElementById('adminEmail')
+    const adminPassword = document.getElementById('adminPassword')
+    const adminError = document.getElementById('adminError')
+
+    // name edit refs
+    const changeNameBtn = document.getElementById('changeNameBtn')
+    const cancelChangeBtn = document.getElementById('cancelChangeBtn')
+    const nameEdit = document.getElementById('nameEdit')
+    const changeNameInput = document.getElementById('changeNameInput')
+    const saveNameBtn = document.getElementById('saveNameBtn')
+
+    // state
+    let myUser = null
+    let usersUnsub = null
+    let messagesUnsub = null
+    let bansUnsub = null
+    let localMode = false
+    let isAdmin = false
+    let adminUid = null
+    let bansMap = {}
+
+    // --- Local-only storage keys & helpers ---
+    const LS_MESSAGES_KEY = 'webchat_local_messages'
+    const LS_USER_KEY = 'webchat_local_user'
+
+    function loadLocalMessages(){
+      try{ const raw = localStorage.getItem(LS_MESSAGES_KEY); return raw ? JSON.parse(raw) : [] }catch(e){ return [] }
+    }
+    function saveLocalMessages(arr){ localStorage.setItem(LS_MESSAGES_KEY, JSON.stringify(arr)) }
+
+    // render helpers (messages now include id)
+    function renderMessages(arr){
+      messagesEl.innerHTML = ''
+      arr.forEach(m=>{
+        if(m.type === 'system'){
+          const div = document.createElement('div')
+          div.className = 'msg system'
+          div.textContent = m.text
+          messagesEl.appendChild(div)
+          return
+        }
+        // skip messages from banned uids
+        if(bansMap[m.uid] && bansMap[m.uid].active){
+          // optionally show a small notice about hidden message for admins
+          if(isAdmin){
+            const div = document.createElement('div')
+            div.className = 'msg system'
+            div.textContent = `[BAN HIDDEN] ${m.name} のメッセージは非表示です`
+            messagesEl.appendChild(div)
+          }
+          return
+        }
+
+        const div = document.createElement('div')
+        div.className = 'msg ' + ((m.uid && myUser && m.uid === myUser.uid) ? 'mine' : 'other')
+
+        // color indicator
+        const colorDot = document.createElement('span')
+        colorDot.className = 'colorDot'
+        colorDot.style.background = m.color || '#94a3b8'
+
+        const meta = document.createElement('div')
+        meta.className = 'meta'
+        const timeLabel = new Date(typeof m.ts === 'number' ? m.ts : (m.ts?.toDate ? m.ts.toDate() : Date.now())).toLocaleTimeString()
+        meta.innerHTML = `<span style="vertical-align:middle">${m.name || '匿名'}</span> · ${timeLabel}`
+
+        const body = document.createElement('div')
+        body.innerHTML = ''
+        body.appendChild(colorDot)
+        const textNode = document.createElement('span')
+        textNode.textContent = m.text || ''
+        body.appendChild(textNode)
+
+        div.appendChild(meta)
+        div.appendChild(body)
+
+        // admin actions
+        if(isAdmin){
+          const actions = document.createElement('div')
+          actions.className = 'actions'
+          const del = document.createElement('button')
+          del.textContent = '削除'
+          del.addEventListener('click', ()=>adminDeleteMessage(m.id))
+          const warn = document.createElement('button')
+          warn.textContent = '警告'
+          warn.addEventListener('click', ()=>adminWarnUser(m.uid, m.name))
+          const ban = document.createElement('button')
+          ban.textContent = 'BAN'
+          ban.addEventListener('click', ()=>adminBanUserPrompt(m.uid, m.name))
+          actions.appendChild(warn)
+          actions.appendChild(ban)
+          actions.appendChild(del)
+          div.appendChild(actions)
+        }
+
+        messagesEl.appendChild(div)
+      })
+      messagesEl.scrollTop = messagesEl.scrollHeight
+    }
+
+    function renderLocalUsers(){
+      usersList.innerHTML = ''
+      const u = localStorage.getItem(LS_USER_KEY)
+      if(u){ const parsed = JSON.parse(u); const el = document.createElement('div'); el.className='small'; el.textContent = parsed.name + ' · ' + parsed.uid.slice(0,6); usersList.appendChild(el) }
+    }
+
+    // helper: show small system toast
+    function showSystemNotification(msg){ if(!systemNotif) return; systemNotif.textContent = msg; systemNotif.style.display = 'block'; systemNotif.style.opacity='1'; setTimeout(()=>{ systemNotif.style.transition='opacity 400ms'; systemNotif.style.opacity='0' },3000); setTimeout(()=>{ systemNotif.style.display='none'; systemNotif.style.transition=''; },3500) }
+
+    // admin modal handlers
+    adminBtn.addEventListener('click', ()=>{ adminModal.style.display='flex'; adminError.style.display='none'; adminEmail.value=''; adminPassword.value=''; })
+    adminCloseBtn.addEventListener('click', ()=>{ adminModal.style.display='none' })
+
+    adminLoginBtn.addEventListener('click', async ()=>{
+      adminError.style.display='none'
+      const email = (adminEmail.value||'').trim()
+      const pwd = (adminPassword.value||'')
+      if(!email || !pwd){ adminError.style.display='block'; adminError.textContent='メールとパスワードを入力してください'; return }
+      try{
+        await signInWithEmailAndPassword(auth, email, pwd)
+        // check custom claims
+        const idRes = await getIdTokenResult(auth.currentUser, true)
+        if(idRes.claims && idRes.claims.admin){
+          isAdmin = true
+          adminUid = auth.currentUser.uid
+          adminModal.style.display='none'
+          showSystemNotification('管理者としてログインしました')
+          // refresh listeners to show admin controls
+          if(myUser){ startFirebaseListeners(myUser.uid) }
+        }else{
+          // not admin: sign out the auth session created by admin login
+          await signOut(auth)
+          adminError.style.display='block'
+          adminError.textContent='管理者権限がありません。Admin SDK でカスタムクレームを設定してください。'
+        }
+      }catch(err){ console.error('admin login failed', err); adminError.style.display='block'; adminError.textContent = 'ログイン失敗: ' + (err && err.message ? err.message : String(err)) }
+    })
+
+    // admin actions: delete, warn, ban
+    async function adminDeleteMessage(messageId){
+      if(!confirm('このメッセージを本当に削除しますか？')) return
+      try{ await deleteDoc(doc(db,'messages',messageId)); showSystemNotification('メッセージを削除しました') }catch(e){ console.error('delete failed', e); alert('削除エラー') }
+    }
+
+    async function adminWarnUser(uid, name){
+      const reason = prompt(`${name} さんへの警告文を入力してください`)
+      if(!reason) return
+      try{ await addDoc(collection(db,'messages'), { text: `⚠️ 管理者警告: ${reason}`, uid: 'system', name: 'Admin', ts: serverTimestamp(), type: 'warning', targetUid: uid }); showSystemNotification('警告を送信しました') }catch(e){ console.error('warn failed', e); alert('送信失败') }
+    }
+
+    function adminBanUserPrompt(uid, name){
+      const reason = prompt(`${name} をBANします。理由を入力してください。 (IPはサーバー側で付与されます)`) || '管理者によるBAN'
+      const scope = confirm('IPも含めた強制BAN（サーバーが必要）を行いますか？ OK=IPも保存 / キャンセル=UID+UAのみ')
+      adminBanUser(uid, name, reason, scope)
+    }
+
+    async function adminBanUser(uid, name, reason, includeIp){
+      try{
+        // collect user agent (機種名) from messages or navigator
+        const ua = navigator.userAgent || 'unknown'
+        const ban = { uid, userAgent: ua, reason, active: true, createdBy: adminUid || null, createdAt: serverTimestamp(), ip: null }
+        // If includeIp flag, we recommend using server-side Cloud Function to record request IP and set ban.ip
+        await addDoc(collection(db,'bans'), ban)
+        showSystemNotification(`${name} をBANしました`)
+      }catch(e){ console.error('ban failed', e); alert('BAN失敗') }
+    }
+
+    // start listeners and ensure users doc exists/updated, also listen bans
+    async function startFirebaseListeners(uid){
+      if(!db) return
+      // ensure user doc
+      const userRef = doc(db, 'users', uid)
+      try{
+        const snapshot = await getDoc(userRef)
+        if(!snapshot.exists()){
+          await setDoc(userRef, { name: myUser.name, uid, createdAt: serverTimestamp(), lastSeen: serverTimestamp() }, { merge: true })
+        }else{
+          await setDoc(userRef, { name: myUser.name, uid, lastSeen: serverTimestamp() }, { merge: true })
+        }
+      }catch(e){ console.warn('setDoc users failed', e) }
+
+      // users list
+      try{
+        const uq = query(collection(db,'users'))
+        if(usersUnsub) usersUnsub()
+        usersUnsub = onSnapshot(uq, snapshot=>{
+          usersList.innerHTML = ''
+          snapshot.forEach(d=>{
+            const data = d.data()
+            const el = document.createElement('div')
+            el.textContent = (data.name||'--') + ' · ' + (data.uid?data.uid.slice(0,6):'')
+            el.className = 'small'
+            usersList.appendChild(el)
+          })
+        })
+      }catch(e){ console.warn('users listener failed', e) }
+
+      // bans list
+      try{
+        if(bansUnsub) bansUnsub()
+        bansUnsub = onSnapshot(query(collection(db,'bans')), snap=>{
+          bansMap = {}
+          snap.forEach(d=>{ const b = d.data(); if(b.uid) bansMap[b.uid] = { ...b, id: d.id } })
+        })
+      }catch(e){ console.warn('bans listener failed', e) }
+
+      // messages
+      try{
+        const mq = query(collection(db,'messages'), orderBy('ts','asc'))
+        if(messagesUnsub) messagesUnsub()
+        messagesUnsub = onSnapshot(mq, snap=>{
+          const arr = []
+          snap.forEach(d=> arr.push({ id: d.id, ...d.data() }))
+          renderMessages(arr)
+        })
+      }catch(e){ console.warn('messages listener failed', e) }
+    }
+
+    // --- Local-only mode ---
+    function startLocalMode(name){
+      localMode = true
+      const uid = 'local-' + Math.random().toString(36).slice(2,10)
+      myUser = { uid, name }
+      localStorage.setItem(LS_USER_KEY, JSON.stringify(myUser))
+      meBox.textContent = name + ' (' + uid.slice(0,6) + ')'
+      statusEl.textContent = 'ローカルモード'
+      loginOverlay.style.display = 'none'
+      renderLocalUsers()
+      const sys = { text: `${name} がログインしました`, uid: 'system', name: 'System', ts: Date.now(), type: 'system' }
+      const arr = loadLocalMessages(); arr.push(sys); saveLocalMessages(arr)
+      renderMessages(loadLocalMessages())
+      showSystemNotification(`${name} がログインしました (${new Date().toLocaleTimeString()})`)
+    }
+
+    function addLocalMessage(text, color){
+      const arr = loadLocalMessages()
+      const m = { text, uid: myUser.uid, name: myUser.name, ts: Date.now(), color: color || null }
+      arr.push(m)
+      saveLocalMessages(arr)
+      renderMessages(arr)
+    }
+
+    // name change handlers
+    function showNameEditor(){ changeNameInput.value = myUser ? (myUser.name || '') : ''; nameEdit.style.display = 'flex'; changeNameInput.focus(); changeNameBtn.style.display = 'none'; cancelChangeBtn.style.display = 'inline-block' }
+    function hideNameEditor(){ nameEdit.style.display = 'none'; changeNameBtn.style.display = 'inline-block'; cancelChangeBtn.style.display = 'none' }
+
+    async function saveNameChange(){
+      const newName = (changeNameInput.value || '').trim()
+      if(!newName) return alert('名前を入力してください')
+      if(!myUser) return alert('ユーザーが未設定です')
+      myUser.name = newName
+      meBox.textContent = newName + ' (' + myUser.uid.slice(0,6) + ')'
+      localStorage.setItem('pref_displayName', newName)
+      if(localMode){ localStorage.setItem(LS_USER_KEY, JSON.stringify(myUser)); renderLocalUsers(); hideNameEditor(); return }
+      if(db && myUser.uid){ try{ await setDoc(doc(db,'users',myUser.uid), { name: newName, uid: myUser.uid, lastSeen: serverTimestamp() }, { merge: true }) }catch(e){ console.warn('update name failed', e) } }
+      hideNameEditor()
+    }
+
+    // guest/new registration flow
+    async function completeRegistrationForSignedInUser(name){
+      if(!auth || !auth.currentUser) throw new Error('ユーザーがサインインしていません')
+      const uid = auth.currentUser.uid
+      myUser = { uid, name }
+      meBox.textContent = name + ' (' + uid.slice(0,6) + ')'
+      localStorage.setItem('pref_displayName', name)
+      try{
+        const userRef = doc(db, 'users', uid)
+        const snapshot = await getDoc(userRef)
+        if(!snapshot.exists()){
+          await setDoc(userRef, { name, uid, createdAt: serverTimestamp(), lastSeen: serverTimestamp() }, { merge: true })
+        }else{
+          await setDoc(userRef, { name, uid, lastSeen: serverTimestamp() }, { merge: true })
+        }
+        await startFirebaseListeners(uid)
+        loginOverlay.style.display = 'none'
+        statusEl.textContent = '接続済み (Firebase)'
+        changeNameBtn.style.display = 'inline-block'
+        const t = new Date().toLocaleTimeString()
+        showSystemNotification(`${name} が登録されました (${t})`)
+        try{ await addDoc(collection(db,'messages'), { text: `${name} が登録されました`, uid: 'system', name: 'System', ts: serverTimestamp(), type: 'system' }) }catch(e){ console.warn('system message failed', e) }
+      }catch(e){ console.warn('completeRegistrationForSignedInUser failed', e); throw e }
+    }
+
+    // event handlers for login/registration
+    guestBtn.addEventListener('click', async (e)=>{
+      e.preventDefault()
+      const name = (displayNameInput.value || '').trim()
+      if(!name){ showLoginError('登録する表示名を入力してください', false); return }
+      localStorage.setItem('pref_displayName', name)
+      if(!auth){ showLoginError('Firebase Authentication が初期化されていません。', true); return }
+      if(auth.currentUser){ try{ await completeRegistrationForSignedInUser(name) }catch(err){ console.error('complete registration failed', err); showLoginError('登録に失敗しました: ' + (err && err.message ? err.message : String(err)), false) } return }
+      try{ statusEl.textContent = 'Firebase に接続中...'; await signInAnonymously(auth); // onAuthStateChanged will handle completion
+      }catch(err){ console.error('signInAnonymously error', err); if(err && (err.code === 'auth/configuration-not-found' || err.code === 'auth/operation-not-allowed')){ showLoginError('Firebase 側で匿名ログイン（Anonymous）または認証設定が有効になっていません。', true); loginHint.style.display='block'; loginHint.innerHTML='Firebase Console → Authentication → Sign-in method → <strong>Anonymous</strong> を有効にしてください。'; retryBtn.style.display='inline-block' }else{ showLoginError('ログインに失敗しました: ' + (err && err.message ? err.message : String(err)), false) } }
+    })
+
+    localBtn.addEventListener('click',(e)=>{ e.preventDefault(); const name = (displayNameInput.value || '').trim(); if(!name){ showLoginError('登録する表示名を入力してください', false); return } startLocalMode(name) })
+
+    retryBtn.addEventListener('click',(e)=>{ e.preventDefault(); loginError.style.display='none'; loginHint.style.display='none'; retryBtn.style.display='none'; guestBtn.click() })
+
+    saveNameBtn.addEventListener('click', async (e)=>{ e.preventDefault(); await saveNameChange() })
+    changeNameBtn.addEventListener('click', (e)=>{ e.preventDefault(); if(!myUser){ alert('ログイン後に名前を変更できます'); return } showNameEditor() })
+    cancelChangeBtn.addEventListener('click', (e)=>{ e.preventDefault(); hideNameEditor() })
+
+    // message send
+    sendForm.addEventListener('submit', async (e)=>{
+      e.preventDefault()
+      const text = (msgText.value || '').trim()
+      const color = colorSelect.value || '#94a3b8'
+      if(!text) return
+      if(!myUser) return alert('ログインしてください')
+      if(localMode){ addLocalMessage(text, color); msgText.value=''; return }
+      try{ await addDoc(collection(db,'messages'), { text, uid: myUser.uid, name: myUser.name, color, ts: serverTimestamp() }); msgText.value=''; }catch(err){ console.error('send error', err); alert('送信エラー: ' + (err && err.message ? err.message : String(err))) }
+    })
+
+    function showLoginError(msg, showHint){ loginError.style.display='block'; loginError.textContent=msg; if(!showHint) loginHint.style.display='none' }
+
+    // Monitor auth state
+    if(auth){
+      onAuthStateChanged(auth, async (user)=>{
+        if(user){
+          const uid = user.uid
+          const prefName = localStorage.getItem('pref_displayName')
+          if(!prefName){ loginOverlay.style.display='flex'; statusEl.textContent='名前登録が必要'; meBox.textContent = uid.slice(0,6); changeNameBtn.style.display='none'; return }
+          let name = prefName
+          myUser = { uid, name }
+          meBox.textContent = name + ' (' + uid.slice(0,6) + ')'
+          loginOverlay.style.display = 'none'
+          statusEl.textContent = '接続済み (Firebase)'
+          changeNameBtn.style.display = 'inline-block'
+          // check admin claim (if this session is admin)
+          try{ const idRes = await getIdTokenResult(user); if(idRes.claims && idRes.claims.admin){ isAdmin = true; adminUid = user.uid; showSystemNotification('管理者としてログイン中') } }catch(e){ console.warn('getIdTokenResult failed', e) }
+          await startFirebaseListeners(uid)
+          // system login message
+          try{ const t = new Date().toLocaleTimeString(); showSystemNotification(`${name} がログインしました (${t})`); await addDoc(collection(db,'messages'), { text: `${name} がログインしました`, uid: 'system', name: 'System', ts: serverTimestamp(), type: 'system' }) }catch(e){ console.warn('system message failed', e) }
+        }else{
+          loginOverlay.style.display='flex'; statusEl.textContent='未接続'; meBox.textContent='未ログイン'; changeNameBtn.style.display='none'; if(usersUnsub) usersUnsub(); if(messagesUnsub) messagesUnsub(); if(bansUnsub) bansUnsub()
+        }
+      })
+    }else{
+      loginOverlay.style.display='flex'; statusEl.style.display='block'; statusEl.textContent='Firebase 未初期化 — ローカルモード推奨'; loginHint.style.display='block'; loginHint.innerHTML='Firebase の初期化に問題があります。'; changeNameBtn.style.display='none'
+    }
+
+    // On load: restore local user and set pref
+    (async ()=>{
+      const saved = localStorage.getItem(LS_USER_KEY)
+      if(saved && !auth){ const parsed = JSON.parse(saved); startLocalMode(parsed.name) }
+      const pref = localStorage.getItem('pref_displayName'); if(pref) displayNameInput.value = pref
+      function isMobileDevice(){ const ua = navigator.userAgent || ''; const isIpad = /iPad/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1); const isMobile = /Android|iPhone|iPod|Windows Phone/.test(ua); return isMobile && !isIpad }
+      if(isMobileDevice()) document.body.classList.add('mobile')
+    })()
+
+    // Notes for deployment / security:
+    // - 管理者アカウントは Firebase Auth (email/password) で用意し、Admin SDK (サーバー側) で custom claims { admin: true } を付与してください.
+    // - IP アドレスを使ったBANを行うにはサーバー側 (Cloud Function) が必要です。クライアントだけではユーザーのIPを確実に取得できません。
+    // - 実運用では Firestore セキュリティルールで write を制限し、Cloud Functions でBANの強制適用やメッセージ検閲を行うことを推奨します.
+
+  </script>
+</body>
+</html>

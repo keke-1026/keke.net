@@ -1,0 +1,164 @@
+<!--
+  keke専用カウントダウン Webページ（専用モード）
+
+  **補足（※画面には表示しません。コード内コメントのみ）**
+  - このファイルは専用イベント1つだけを表示するシンプルなカウントダウンです。
+  - 編集はソース内の EVENT オブジェクトを変更してください（date は ISO 8601 推奨）。
+  - サイト上からイベントの追加や切り替えはできない設計です。
+  - 公開時はブラウザの日時に依存するため、サーバ側で厳密に合わせたい場合はサーバ時刻を参照する実装に変更してください。
+
+  イベント項目のフォーマット例:
+  const EVENT = { name: '誕生日', date: '2025-12-25T15:00:00+09:00', detail: 'プレゼント交換会' }
+
+  プレビュー方法:
+  1) ファイルを保存（例: keke_countdown.html）
+  2) ブラウザで開く
+
+  表示仕様:
+  - 背景は黒、文字は白
+  - 「○○まで、、、時間」といった日本語表記
+  - 日・時・分・秒（秒は小数第2位まで表示）
+  - 下部に当日のイベント内容を表示するスペースあり
+-->
+
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>ダンスクラブ発表会イベントまでカウントダウン</title>
+  <style>
+    :root{--bg:#000;--fg:#fff;--muted:#999}
+    html,body{height:100%;margin:0}
+    body{
+      background:var(--bg);
+      color:var(--fg);
+      font-family: "Noto Sans JP", system-ui, -apple-system, "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", sans-serif;
+      display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box
+    }
+    .wrap{max-width:980px;width:100%;text-align:center}
+    h1{font-weight:700;margin:8px 0 4px;font-size:28px}
+    .subtitle{color:var(--muted);margin-bottom:24px}
+
+    .countdown{
+      display:flex;gap:12px;align-items:baseline;justify-content:center;flex-wrap:wrap;margin-bottom:24px
+    }
+
+    .time-card{background:rgba(255,255,255,0.04);padding:18px 22px;border-radius:12px;min-width:110px}
+    .time-num{font-size:40px;font-weight:700;letter-spacing:0.02em}
+    .time-label{margin-top:6px;color:var(--muted);font-size:14px}
+
+    .big-line{font-size:18px;margin-bottom:12px}
+
+    .details{background:rgba(255,255,255,0.02);padding:14px;border-radius:10px;color:var(--muted);min-height:80px}
+
+    footer{margin-top:18px;color:var(--muted);font-size:13px}
+    .copyright{margin-top:10px;color:var(--muted);font-size:12px}
+
+    @media (max-width:560px){
+      .time-card{min-width:86px;padding:12px}
+      .time-num{font-size:28px}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1 id="event-name">— イベント名 —</h1>
+    <div class="subtitle" id="lead">○○まで、、、時間</div>
+
+    <div class="countdown" aria-live="polite">
+      <div class="time-card">
+        <div class="time-num" id="days">0</div>
+        <div class="time-label">日</div>
+      </div>
+      <div class="time-card">
+        <div class="time-num" id="hours">00</div>
+        <div class="time-label">時間</div>
+      </div>
+      <div class="time-card">
+        <div class="time-num" id="minutes">00</div>
+        <div class="time-label">分</div>
+      </div>
+      <div class="time-card">
+        <div class="time-num" id="seconds">00.00</div>
+        <div class="time-label">秒（小数第2位まで）</div>
+      </div>
+    </div>
+
+    <div class="big-line" id="status-line"></div>
+
+    <div class="details" id="event-detail"></div>
+
+    <footer>
+      <div class="copyright">© 2025 keke</div>
+    </footer>
+  </div>
+
+  <script>
+    // ====== ここを編集してください（画面には表示されません。コード内のコメント） ======
+    // このページは専用イベント1つだけを表示します。編集する場合は下の EVENT オブジェクトを変更してください。
+    const EVENT = {
+      name: 'ダンスクラブ発表会イベントまでカウントダウン',
+      date: '2025-10-15T13:00:00+09:00',
+      detail: 'クラブのダンスクラブで行われる、ダンス発表会のカウントダウンです'
+    };
+    // =====================================================================
+
+    const eventNameEl = document.getElementById('event-name');
+    const leadEl = document.getElementById('lead');
+    const daysEl = document.getElementById('days');
+    const hoursEl = document.getElementById('hours');
+    const minutesEl = document.getElementById('minutes');
+    const secondsEl = document.getElementById('seconds');
+    const detailEl = document.getElementById('event-detail');
+    const statusLine = document.getElementById('status-line');
+
+    function pad(n,width=2){return String(n).padStart(width,'0')}
+
+    // 初期表示をEVENTからセット
+    let targetDate = new Date(EVENT.date);
+    eventNameEl.textContent = EVENT.name || '— イベント —';
+    leadEl.textContent = `${EVENT.name} まで、、、時間`;
+    detailEl.textContent = EVENT.detail || '';
+
+    function tick(){
+      if(!targetDate) return;
+      const now = new Date();
+      let diff = targetDate - now;
+      if(diff <= 0){
+        daysEl.textContent = '0';
+        hoursEl.textContent = '00';
+        minutesEl.textContent = '00';
+        secondsEl.textContent = '00.00';
+        statusLine.textContent = 'イベント開催中、または終了しました。';
+        return;
+      }
+
+      const days = Math.floor(diff / 86400000); // ms in day
+      diff -= days * 86400000;
+      const hours = Math.floor(diff / 3600000);
+      diff -= hours * 3600000;
+      const minutes = Math.floor(diff / 60000);
+      diff -= minutes * 60000;
+      const secsFloat = diff / 1000; // fractional seconds
+      const secondsInt = Math.floor(secsFloat);
+      const hundredths = Math.floor((secsFloat - secondsInt) * 100);
+
+      daysEl.textContent = String(days);
+      hoursEl.textContent = pad(hours);
+      minutesEl.textContent = pad(minutes);
+      secondsEl.textContent = `${pad(secondsInt)}.${pad(hundredths)}`;
+
+      statusLine.textContent = `残り: ${days}日 ${pad(hours)}時間 ${pad(minutes)}分 ${pad(secondsInt)}.${pad(hundredths)}秒`;
+    }
+
+    // 更新頻度: 10ms（小数第2位表示のため）
+    setInterval(tick, 10);
+
+    // 初回描画
+    tick();
+
+    // 注意: クライアントの時計がずれていると表示が異なります。
+  </script>
+</body>
+</html>

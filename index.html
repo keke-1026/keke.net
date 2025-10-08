@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>keke.net</title>
+  <style>
+    :root{--main:#2d8cff;--bg:#f7fbff;--card:#fff;--text:#0b1220;--sub:#445}
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,"Hiragino Kaku Gothic ProN",Meiryo;background:var(--bg);margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;color:var(--text)}
+    .wrap{width:100%;max-width:1000px;padding:30px;text-align:center}
+    h1{font-size:24px;margin-bottom:10px}
+    p.desc{font-size:15px;color:var(--sub);margin-bottom:30px}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}
+    .card{background:var(--card);border-radius:12px;box-shadow:0 6px 18px rgba(10,30,80,0.06);padding:20px;display:flex;flex-direction:column;justify-content:space-between;text-align:left;transition:transform 0.2s ease}
+    .card:hover{transform:translateY(-3px)}
+    .title{font-weight:700;font-size:18px;margin-bottom:8px;color:var(--text)}
+    .info{font-size:14px;color:var(--sub);margin-bottom:16px;line-height:1.6}
+    .btn{padding:10px 14px;border:none;border-radius:8px;background:var(--main);color:white;font-size:14px;font-weight:600;cursor:pointer;align-self:flex-start;transition:0.2s}
+    .btn:hover{opacity:0.9}
+    footer{margin-top:30px;font-size:13px;color:#667;text-align:center}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>keke.net</h1>
+    <p class="desc">このページから各コンテンツへ移動できます。ボタンを押すと対応するページへ移行します。</p>
+
+    <div class="grid">
+      <div class="card"><div><div class="title">利用規約</div><div class="info">当サイトの利用規約を確認できます。</div></div><button class="btn" onclick="goPage('riyoukiyaku')">開く</button></div>
+
+      <div class="card"><div><div class="title">ダンスクラブ発表会カウントダウン</div><div class="info">ダンスクラブの発表会のカウントダウンサイトです。</div></div><button class="btn" onclick="goPage('danceclabtime')">開く</button></div>
+
+      <div class="card"><div><div class="title">九九計算サイト</div><div class="info">PC専用の九九練習サイトです。</div></div><button class="btn" onclick="goPage('kuku')">開く</button></div>
+
+      <div class="card"><div><div class="title">WebChat</div><div class="info">Webで掲示板チャットができます。</div></div><button class="btn" onclick="goPage('chatserver')">開く</button></div>
+
+      <div class="card"><div><div class="title">人狼GM専用進行</div><div class="info">ダイソーの人狼を前提に進めていきます。</div></div><button class="btn" onclick="goPage('jinrouGM')">開く</button></div>
+
+      <div class="card"><div><div class="title">神経衰弱1人Ver.</div><div class="info">ペアでそろえていく神経衰弱の1人Ver.</div></div><button class="btn" onclick="goPage('30pea')">開く</button></div>
+
+      <div class="card"><div><div class="title">雷落ちたとこ予測装置</div><div class="info">いろいろな方法で探せます</div></div><button class="btn" onclick="goPage('kaminari')">開く</button></div>
+
+      <div class="card"><div><div class="title">プロセカ失点計算装置</div><div class="info">スマホ音ゲープロセカの失点計算装置</div></div><button class="btn" onclick="goPage('prsksitten')">開く</button></div>
+
+      <div class="card"><div><div class="title">なし</div><div class="info">まだないです。開くとこのページに飛ばされます。</div></div><button class="btn" onclick="goPage('index')">開く</button></div>
+
+      <div class="card"><div><div class="title">なし</div><div class="info">まだないです。開くとこのページに飛ばされます。</div></div><button class="btn" onclick="goPage('index')">開く</button></div>
+
+      <div class="card"><div><div class="title">なし</div><div class="info">まだないです。開くとこのページに飛ばされます。</div></div><button class="btn" onclick="goPage('index')">開く</button></div>
+
+      <div class="card"><div><div class="title">なし</div><div class="info">まだないです。開くとこのページに飛ばされます。</div></div><button class="btn" onclick="goPage('index')">開く</button></div>
+    </div>
+  
+    <footer>© keke — keke.net</footer>
+  </div>
+
+  <script>
+    function goPage(page){
+      // URLパラメータは使わず、相対パスで直接遷移
+      window.location.href = `./${page}.html`;
+    }
+
+    // 以下のイベント処理は削除してOK（必要なら残しても問題なし）
+    // window.addEventListener('DOMContentLoaded', ()=>{
+    //   const params = new URLSearchParams(window.location.search);
+    //   const page = params.get('p');
+    //   if(page){
+    //     const target = `./${page}.html`;
+    //     window.location.href = target;
+    //   }
+    // });
+  </script>
+
+</body>
+</html>

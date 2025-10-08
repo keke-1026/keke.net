@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>利用規約</title>
+  <style>
+    :root{
+      --bg:#f7f8fb;
+      --card:#ffffff;
+      --accent:#2563eb;
+      --muted:#666;
+      --max-width:900px;
+      --footer-height:84px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family: -apple-system, "Segoe UI", Roboto, "Hiragino Kaku Gothic ProN", "Noto Sans JP", "メイリオ", sans-serif;
+      background:var(--bg);
+      color:#111;
+      -webkit-font-smoothing:antialiased;
+    }
+
+    .wrap{
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:28px 16px 100px;
+    }
+
+    .card{
+      width:100%;
+      max-width:var(--max-width);
+      background:var(--card);
+      border-radius:12px;
+      box-shadow:0 6px 30px rgba(16,24,40,0.06);
+      padding:28px;
+      display:flex;
+      flex-direction:column;
+      gap:18px;
+    }
+
+    h1{
+      margin:0;
+      font-size:20px;
+      letter-spacing:0.2px;
+    }
+
+    .meta{
+      font-size:13px;
+      color:var(--muted);
+    }
+
+    .tos-area{
+      border:1px solid #eef2ff;
+      border-radius:8px;
+      padding:18px;
+      background:#fcfdff;
+      overflow:auto;
+      line-height:1.7;
+      font-size:15px;
+      max-height:calc(70vh - 120px);
+    }
+
+    .tos-area h2{
+      margin:18px 0 8px;
+      font-size:16px;
+    }
+    .tos-area p{
+      margin:8px 0;
+    }
+    .tos-area ul{margin:8px 0 8px 18px}
+
+    .actions{
+      position:fixed;
+      left:50%;
+      transform:translateX(-50%);
+      bottom:20px;
+      display:flex;
+      gap:18px;
+      align-items:center;
+      justify-content:center;
+      z-index:40;
+    }
+
+    .btn{
+      min-width:150px;
+      padding:12px 18px;
+      border-radius:10px;
+      border:0;
+      font-weight:600;
+      font-size:15px;
+      cursor:pointer;
+      box-shadow:0 6px 18px rgba(16,24,40,0.06);
+    }
+    .btn.secondary{
+      background:transparent;
+      border:1px solid #d1d5db;
+      color:#111;
+    }
+    .btn.primary{
+      background:var(--accent);
+      color:#fff;
+    }
+
+    .copyright{
+      margin-top:12px;
+      font-size:13px;
+      color:var(--muted);
+      text-align:center;
+    }
+
+    .overlay{
+      position:fixed;
+      inset:0;
+      background:rgba(2,6,23,0.6);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      z-index:60;
+      display:none;
+    }
+    .overlay .box{
+      background:white;
+      padding:22px;
+      border-radius:10px;
+      max-width:420px;
+      width:92%;
+      text-align:center;
+      box-shadow:0 12px 40px rgba(2,6,23,0.4);
+    }
+    .overlay p{margin:12px 0 18px; color:var(--muted)}
+
+    .accepted-message {
+      display:none;
+      text-align:center;
+      font-size:18px;
+      font-weight:600;
+      color:var(--accent);
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap" role="main">
+    <article class="card" aria-labelledby="tos-title">
+      <header>
+        <h1 id="tos-title">利用規約</h1>
+        <p class="meta">最終更新: 2025年10月8日</p>
+      </header>
+
+      <section class="tos-area" id="tos-content" tabindex="0" aria-label="利用規約本文">
+        <h2>第1条（原則規則）</h2>
+        <p>本規約は、kekeが提供するサービスの利用に関する一切の関係に適用されます。利用者は、本規約に同意した上でサービスを利用するものとします。</p>
+
+        <h2>第2条（利用）</h2>
+        <p>kekeは、利用登録の申請者に以下の事由があると判断した場合、利用登録の申請を承諾しないことがあります。</p>
+        <ul>
+          <li>過去に人々が嫌がることをした人</li>
+          <li>過去に本規約違反等により登録を抹消されたことがある場合</li>
+        </ul>
+
+        <h2>第3条（禁止事項）</h2>
+        <p>ユーザーは、以下の行為をしてはなりません。</p>
+        <ul>
+          <li>法令または公序良俗に反する行為</li>
+          <li>keke、他のユーザー、または第三者の権利を侵害する行為</li>
+          <li>kekeが提供するサービスにて、学校での悪用、また何かの犯罪に利用する場合</li>
+          <li>本サービスのソースコードを閲覧、改変</li>
+          <li>その他kekeが不適切と判断する行為</li>
+        </ul>
+
+        <h2>第4条（免責事項）</h2>
+        <p>kekeは提供する情報やサービスについて、完全性、有用性、正確性などについて一切保証しません。ユーザーは自己の責任において利用するものとします。</p>
+
+        <h2>第5条（規約変更）</h2>
+        <p>kekeは必要と判断した場合には、ユーザーへの事前通知なくして本規約を変更できるものとします。変更後の規約は本サイトに掲示した時点から効力を生じます。</p>
+
+        <h2>第6条（準拠法・管轄）</h2>
+        <p>本規約の解釈にあたっては日本法を準拠法とし、本サービスに起因または関連する一切の紛争については、東京地方裁判所を専属的合意管轄裁判所とします。</p>
+      </section>
+
+      <div class="copyright" aria-hidden="true">
+        © <span id="year">2025</span> keke.net . All rights reserved.
+      </div>
+    </article>
+    <div class="accepted-message" id="acceptedMessage">利用規約に同意しました。keke.netのサービスをお楽しみください。</div>
+  </main>
+
+  <div class="actions" role="region" aria-label="利用規約への同意操作">
+    <button class="btn secondary" id="declineBtn" type="button">同意しない</button>
+    <button class="btn primary" id="acceptBtn" type="button">同意する</button>
+  </div>
+
+  <div class="overlay" id="overlay" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="box" role="document">
+      <h3>同意が必要です</h3>
+      <p>本サービスを利用するには利用規約への同意が必要です。ページを離れる場合はブラウザの戻る操作を行ってください。</p>
+      <div style="display:flex;gap:12px;justify-content:center;">
+        <button class="btn secondary" id="overlayClose">ページに戻る</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('year').textContent = new Date().getFullYear();
+
+    const acceptBtn = document.getElementById('acceptBtn');
+    const declineBtn = document.getElementById('declineBtn');
+    const overlay = document.getElementById('overlay');
+    const overlayClose = document.getElementById('overlayClose');
+    const acceptedMessage = document.getElementById('acceptedMessage');
+
+    acceptBtn.addEventListener('click', ()=>{
+      try {
+        localStorage.setItem('tosAccepted', 'true');
+      } catch (e) {}
+
+      const actions = document.querySelector('.actions');
+      if (actions) actions.style.display = 'none';
+      const card = document.querySelector('.card');
+      if (card) card.style.display = 'none';
+      acceptedMessage.style.display = 'block';
+    });
+
+    declineBtn.addEventListener('click', ()=>{
+      overlay.style.display = 'flex';
+      overlay.setAttribute('aria-hidden', 'false');
+      overlayClose.focus();
+    });
+
+    overlayClose.addEventListener('click', ()=>{
+      overlay.style.display = 'none';
+      overlay.setAttribute('aria-hidden', 'true');
+      declineBtn.focus();
+    });
+
+    overlay.addEventListener('keydown', (e)=>{
+      if(e.key === 'Escape') {
+        overlay.style.display = 'none';
+        overlay.setAttribute('aria-hidden', 'true');
+        declineBtn.focus();
+      }
+    });
+  </script>
+</body>
+</html>
